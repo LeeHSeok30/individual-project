@@ -12,16 +12,18 @@ const data=TRACE_DATA;
 const at=id=>document.getElementById(id);
 const select=at('record'), tie=at('tie'),step=at('step');
 for(const d of data)select.add(new Option(d.name));
-function reset(){step.max=data[select.selectedIndex].x.length;step.value=step.max;draw()}
+function reset(){const d=data[select.selectedIndex];step.max=d.x.length;step.value=d.dates?48:step.max;draw()}
 function draw(){
  const d=data[select.selectedIndex],i=Number(step.value)-1,row=d.modes[tie.selectedIndex][i];
- at('game').textContent=String(i+1);at('head').textContent='Points per game · window '+d.k;
+ at('game').textContent=String(i+1)+(d.dates?' · '+d.dates[i]:'');at('head').textContent='Points per game · window '+d.k;
  at('bars').replaceChildren();
- d.x.forEach((v,j)=>{const cell=document.createElement('div');cell.className='column'+(j>i-d.k&&j<=i?' in':'')+(j===row.queue[0]?' leading':'');
+ const first=d.dates?Math.max(0,i-9):0;
+ const shown=d.dates?d.x.slice(first,i+1):d.x;
+ shown.forEach((v,offset)=>{const j=first+offset;const cell=document.createElement('div');cell.className='column'+(j>i-d.k&&j<=i?' in':'')+(j===row.queue[0]?' leading':'');
  const val=document.createElement('b');val.textContent=v;const bar=document.createElement('div');bar.className='bar';bar.style.setProperty('--h',(88*v/Math.max(...d.x))+'px');
  cell.append(val,bar);const lbl=document.createElement('small');lbl.textContent='G'+(j+1);cell.append(lbl);at('bars').append(cell)});
  at('queue').textContent=row.queue.map(j=>'G'+(j+1)+' ('+d.x[j]+')').join('   →   ');
  at('stats').textContent='Window maximum: '+(row.maximum??'warming up')+'   ·   Score comparisons this update: '+row.c+'   ·   Back removals: '+row.p;
- at('verified').textContent='All three Python methods agree. Complete output: ['+d.answers.join(', ')+']';
+ at('verified').textContent=d.dates?'All three Python methods agree on all 70 complete windows. The chart shows up to the last 10 appearances.':'All three Python methods agree. Complete output: ['+d.answers.join(', ')+']';
 }
 select.onchange=reset;tie.onchange=draw;step.oninput=draw;reset();</script></html>

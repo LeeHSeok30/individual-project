@@ -14,6 +14,7 @@ import tempfile
 from time import perf_counter_ns
 
 from methods import METHODS, validate
+from streaming import RollingMax
 
 class Meter(int):
     """Count comparisons between data values, separately from timing."""
@@ -68,11 +69,28 @@ def check():
         for x in itertools.product((-1, 0, 1), repeat=n):
             for k in range(1, n+1):
                 oracle = [max(x[j:j+k]) for j in range(n-k+1)]
+                stream = RollingMax(k)
+                assert [stream.push(v) for v in x] == [None] * (k - 1) + oracle
                 for f in METHODS:
                     assert f(x, k) == oracle, (f.__name__, x, k)
                 for tie in (False, True):
                     assert [v for _, _, _, v in trace(x,k,tie) if v is not None] == oracle
                 total += 1
+    for invalid_width in (0, -1, 1.5, True):
+        try:
+            RollingMax(invalid_width)
+        except ValueError:
+            continue
+        raise AssertionError(invalid_width)
+    stream = RollingMax(2)
+    assert stream.push(12) is None
+    try:
+        stream.push(None)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Missing score accepted")
+    assert stream.push(9) == 12
     for x,k in [([],1),([1],0),([1],2),([1],1.5)]:
         for f in METHODS:
             try:

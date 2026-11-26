@@ -3,11 +3,14 @@ import json
 from pathlib import Path
 from experiment import trace
 from methods import METHODS
+from season import load_games
 
 def build():
     scenarios = []
+    season = load_games()
     for name,x,k in [('Six games',[28,14,20,17,12,16],5),('Equal scores',[18]*9,5),
-                     ('One expensive update',[9,8,7,6,5,4,3,2,1,10],9)]:
+                     ('One expensive update',[9,8,7,6,5,4,3,2,1,10],9),
+                     ('Stephen Curry · 2023–24',[v for _,v in season],5)]:
         answers = [f(x,k) for f in METHODS]
         assert all(a==answers[0] for a in answers)
         modes=[]
@@ -16,6 +19,7 @@ def build():
             metrics=list(trace(x,k,keep,indices))
             modes.append([dict(c=c,p=p,queue=q,maximum=v) for (c,p,_,v),q in zip(metrics,indices)])
         scenarios.append(dict(name=name,x=x,k=k,answers=answers[0],modes=modes))
+    scenarios[-1]['dates'] = [day.isoformat() for day, _ in season]
     html = Path(__file__).with_name('viewer.template').read_text(encoding='utf-8')
     dest=Path(__file__).with_name('viewer.html')
     dest.write_text(html.replace('TRACE_DATA',json.dumps(scenarios)),encoding='utf-8')
